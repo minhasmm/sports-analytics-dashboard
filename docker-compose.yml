@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: sports-db
+    environment:
+      POSTGRES_USER: sports_user
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: sports_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sports-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Flask Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sports-backend
+    environment:
+      FLASK_APP: backend/app.py
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://sports_user:secure_password@postgres:5432/sports_analytics
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+      - redis
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sports-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://backend:5000/api/v1
+
+volumes:
+  postgres_data:
+  redis_data:
