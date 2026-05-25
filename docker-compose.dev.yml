@@ -1,0 +1,51 @@
+version: '3.8'
+
+# Development Docker Compose - with hot reload and debugging
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sports-analytics-backend-dev
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: True
+      DATABASE_URL: sqlite:///sports_analytics.db
+      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - backend-data-dev:/app/instance
+    networks:
+      - sports-network-dev
+    command: flask run --host=0.0.0.0
+    stdin_open: true
+    tty: true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: sports-analytics-frontend-dev
+    environment:
+      VITE_API_URL: http://localhost:5000/api/v1
+      VITE_ENVIRONMENT: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - sports-network-dev
+    command: npm run dev
+    stdin_open: true
+    tty: true
+
+volumes:
+  backend-data-dev:
+
+networks:
+  sports-network-dev:
+    driver: bridge
